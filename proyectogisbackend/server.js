@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const cors = require('cors');
+const svg = require('svg.js');
 //const moment = require('moment');
 
 const app = express();
@@ -20,44 +21,41 @@ app.get('/', (req, res) => {
     res.send('API Proyecto GIS');
 });
 
-app.get('/api/cursogis', async (req, res) =>{
-    try{
-        const result = await pool.query('SELECT * FROM seguimientos');
-        res.json(result.rows);
-    } catch (err){
-        console.error(err);
-        res.status(500).json({error: 'Internal Server Error'})
-    }
-});
 
-app.get('/api/dimensiones', async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT 
-                ST_Xmin(bb) as xmin, 
-                ST_ymax(bb) * -1 as ymax, 
-                ST_Xmax(bb) - ST_Xmin(bb) as ancho,
-                ST_Ymax(bb) - ST_ymin(bb) as alto
-            FROM 
-                (SELECT ST_Extent(geom) bb FROM proyecto.parcelas) AS extent
-        `);
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
 
 app.get('/api/objetos', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT id, area, st_assvg(geom, 1, 4) as svg FROM proyecto.parcelas
+            SELECT st_assvg(geom, 1, 4) as svg FROM proyecto.parcelas
         `);
         res.json(result.rows);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Internal Server Error' });
     }
+});
+
+app.post('/api/crearform', async (req, res) =>{
+    try {
+        const { cultivo, area, num_subdivisiones } = req.body;
+        console.log({ cultivo, area, num_subdivisiones });
+
+        const query = `
+            INSERT INTO proyecto.form_skr 
+            ("cultivo", "area", "num_subdivisiones") 
+            VALUES ($1, $2, $3) 
+            RETURNING *`;
+
+        const values = [cultivo, area, num_subdivisiones];
+
+        const result = await pool.query(query, values);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error inserting formulario:', error);
+        res.status(500).json({ error: error.message });
+    }
+
+
 });
 
 

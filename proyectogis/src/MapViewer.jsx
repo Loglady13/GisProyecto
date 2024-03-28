@@ -10,7 +10,7 @@ const MapViewer = () => {
     }, []);
 
     const cargarFigura = () => {
-        fetch('server.js')
+        fetch('http://localhost:5000/api/objetos')
             .then(response => response.json())
             .then(data => {
                 verMapa(800, 600, data);
