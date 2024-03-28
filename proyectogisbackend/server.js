@@ -35,6 +35,18 @@ app.get('/api/objetos', async (req, res) => {
     }
 });
 
+app.get('/api/geom', async (req, res) => {
+    try {
+        const result = await pool.query(`
+        SELECT id, geom FROM proyecto.parcelas
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' }); 
+    }
+})
+
 app.post('/api/crearform', async (req, res) =>{
     try {
         const { cultivo, area, num_subdivisiones } = req.body;
@@ -57,6 +69,28 @@ app.post('/api/crearform', async (req, res) =>{
 
 
 });
+
+app.post('/api/cortes_verticales', async (req, res) => {
+    try {
+        const { geometria, cortes } = req.body;
+        console.log({ geometria, cortes });
+
+        const query = `
+            SELECT ST_AsSVG(unnest), unnest AS geom 
+            FROM (
+                SELECT unnest(cortes_verticales($1::geometry, $2::int[])) AS recortes
+            ) AS resultado`;
+
+        const values = [geometria, cortes];
+
+        const result = await pool.query(query, values);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error en cortes verticales:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 
 app.listen(5000, () => {
