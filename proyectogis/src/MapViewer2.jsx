@@ -4,7 +4,8 @@ import axios from 'axios';
 function Mapa() {
   const [showModal, setShowModal] = useState(false);
   const [objetos, setObjetos] = useState([]);
-  const [geom, setGeom] = useState([]);
+  const [selectedGeometry, setSelectedGeometry] = useState(null);
+  const [availableGeometries, setAvailableGeometries] = useState([]);
 
   const [formData, setFormData] = useState({
     cultivo: '',
@@ -12,19 +13,25 @@ function Mapa() {
     num_subdivisiones: ''
   });
 
-
   const enviarDatos = async () => {
     try {
       const response = await axios.post('http://localhost:5000/api/crearform', formData);
-      
+      const { id, area, num_subdivisiones } = response.data;
+      const cortes = Array.from({ length: num_subdivisiones }, () => Math.ceil(area / num_subdivisiones));
+      const cortesData = {
+        geometria: selectedGeometry,
+        cortes: cortes
+      };
+      const {data} = await axios.post('http://localhost:5000/api/cortes_verticales', cortesData);
+      console.log(data);
+      setObjetos(data);
       setFormData({
         cultivo: '',
         area: '',
         num_subdivisiones: ''
       });
       setShowModal(false);   
-    }
-    catch (error) {
+    } catch (error) {
       console.error('Error en la solicitud:', error);
     }
   };
@@ -38,13 +45,23 @@ function Mapa() {
   };
 
   useEffect(() => {
+    async function fetchGeom() {
+      try {
+        const response = await axios.get('http://localhost:5000/api/geom');
+        setAvailableGeometries(response.data);
+      } catch (error) {
+        console.error('Error fetching geometries:', error);
+      }
+    }
+
+    fetchGeom();
+  }, []);
+
+  useEffect(() => {
     async function fetchObjetos() {
       try {
         const response = await axios.get('http://localhost:5000/api/objetos');
-        setObjetos(response.data.map(objeto => ({
-          id: objeto.id,
-          svg: objeto.svg,
-        })));
+        setObjetos(response.data);
       } catch (error) {
         console.error('Error fetching objetos:', error);
       }
@@ -53,24 +70,17 @@ function Mapa() {
     fetchObjetos();
   }, []);
 
-  useEffect(() => {
-    async function fetchGeom() {
-      try {
-        const response = await axios.get('http://localhost:5000/api/geom');
-        setGeom(response.data.map(geom => ({
-          id: geom.id,
-          geom: geom.geom,
-        })));
-      } catch (error) {
-        console.error('Error fetching objetos:', error);
-      }
+  const handleOpenModal = (selectedGeom) => {
+    setSelectedGeometry(null);
+    const {id} = selectedGeom; // Assuming the id is available in selectedGeom
+    const foundGeometry = availableGeometries.find(geometry => geometry.id === id);
+    console.log('Hola',foundGeometry);
+    if (foundGeometry) {
+      setSelectedGeometry(foundGeometry.geom);
+      setShowModal(true);
+    } else {
+      console.error('No se encontró la geometría para el ID seleccionado:', id);
     }
-
-    fetchGeom();
-  }, []);
-
-  const handleOpenModal = () => {
-    
     setShowModal(true);
     setFormData({
       cultivo: '',
@@ -87,7 +97,7 @@ function Mapa() {
     <div id="mapa" style={{ textAlign: 'center' }}>
       <svg id="svg" width="800" height="600" viewBox="443698.75456394313 -1146566.6288744938 872.5160287136096 598.7469839074183">
         {objetos.map((objeto, index) => (
-          <path key={index} d={objeto.svg} id={objeto.id} stroke="black" className="objeto_espacial" fill="rgba(29,94,5, 0.5)" strokeWidth="1.090645035892012" onClick={() => handleOpenModal(objeto.geom)} />
+          <path key={objeto.id} d={objeto.svg} id={objeto.id} stroke="black" className="objeto_espacial" fill="rgba(29,94,5, 0.5)" strokeWidth="1.090645035892012" onClick={() => handleOpenModal(objeto)} />
         ))}
       </svg>
       {showModal && (

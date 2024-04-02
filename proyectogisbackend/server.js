@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
 app.get('/api/objetos', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT st_assvg(geom, 1, 4) as svg FROM proyecto.parcelas
+            SELECT id, st_assvg(geom, 1, 4) as svg FROM proyecto.parcelas
         `);
         res.json(result.rows);
     } catch (err) {
@@ -76,10 +76,11 @@ app.post('/api/cortes_verticales', async (req, res) => {
         console.log({ geometria, cortes });
 
         const query = `
-            SELECT ST_AsSVG(unnest), unnest AS geom 
-            FROM (
-                SELECT unnest(cortes_verticales($1::geometry, $2::int[])) AS recortes
-            ) AS resultado`;
+        SELECT ST_AsSVG(recortes) AS svg, recortes AS geom 
+        FROM (
+            SELECT unnest(cortes_verticales($1::geometry, $2::int[])) AS recortes
+        ) AS resultado
+        `;
 
         const values = [geometria, cortes];
 
