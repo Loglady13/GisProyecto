@@ -92,6 +92,28 @@ app.post('/api/cortes_verticales', async (req, res) => {
     }
 });
 
+app.post('/api/cortes_horizontales', async (req, res) => {
+    try {
+        const { geometria, cortes } = req.body;
+        console.log({ geometria, cortes });
+
+        const query = `
+        SELECT ST_AsSVG(recortes) AS svg, recortes AS geom 
+        FROM (
+            SELECT unnest(cortes_horizontales_g1($1::geometry, $2::int[])) AS recortes
+        ) AS resultado
+        `;
+
+        const values = [geometria, cortes];
+
+        const result = await pool.query(query, values);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error en cortes horizontales:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 
 app.listen(5000, () => {

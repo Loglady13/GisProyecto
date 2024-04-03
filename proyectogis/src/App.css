@@ -76,6 +76,7 @@
   width: 80%;
   max-width: 400px;
   position: relative; /* Esto asegura que el modal esté relativo al viewport */
+  border-radius: 2rem;
 }
 
 .close {
@@ -96,7 +97,29 @@
   background-color: #282c34;
 }
 
+.formulario {
+  display: flex;
+  flex-wrap: wrap;
+  
+}
 
+.input-group {
+  flex: 1 1 50%; /* Ajusta el ancho de los elementos según sea necesario */
+  margin-bottom: 20px; /* Aumenta la separación entre los grupos de entrada */
+}
+
+#select {
+  order: -1;
+  flex: 1 1 100%; /* Para que ocupe todo el ancho en una sola línea */
+  margin-bottom: 20px; /* Aumenta la separación entre el select y los demás elementos */
+}
+
+button {
+  margin: 1.3rem;
+  width: 20%;
+  height: max-content;
+
+}
 
 
 
